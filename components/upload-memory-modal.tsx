@@ -24,6 +24,7 @@ export function UploadMemoryModal({
   const [caption, setCaption] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState(defaultAlbum === 'all' ? 'first-year' : defaultAlbum);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -46,7 +47,8 @@ export function UploadMemoryModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    if (isSubmitting) return;
     e.preventDefault();
     if (!image) {
       setError('กรุณาเลือกรูปภาพที่ต้องการอัปโหลด');
@@ -213,9 +215,10 @@ export function UploadMemoryModal({
             </button>
             <button
               type="submit"
-              className="px-5 py-2 rounded-lg bg-[#93bfff] text-[#090f1b] hover:bg-[#b0d0ff] text-sm font-semibold flex items-center gap-1.5 transition-all shadow-md"
+              disabled={isSubmitting}
+              className="px-5 py-2 rounded-lg bg-[#93bfff] text-[#090f1b] hover:bg-[#b0d0ff] text-sm font-semibold flex items-center gap-1.5 transition-all shadow-md disabled:opacity-50"
             >
-              <Sparkles size={15} /> บันทึกภาพลงอัลบั้ม
+              <Sparkles size={15} /> {isSubmitting ? 'กำลังอัปโหลด...' : 'บันทึกภาพลงอัลบั้ม'}
             </button>
           </div>
         </form>

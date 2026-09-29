@@ -3,12 +3,13 @@
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertTriangle, Trash2 } from 'lucide-react';
 import { type Member } from '@/data/members';
+import { useState } from 'react';
 
 interface DeleteConfirmModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   member: Member | null;
-  onConfirm: (id: string) => void;
+  onConfirm: (id: string) => void | Promise<void>;
 }
 
 export function DeleteConfirmModal({
@@ -17,7 +18,18 @@ export function DeleteConfirmModal({
   member,
   onConfirm,
 }: DeleteConfirmModalProps) {
+  const [isDeleting, setIsDeleting] = useState(false);
   if (!member) return null;
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onConfirm(member.id);
+      onOpenChange(false);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -38,7 +50,7 @@ export function DeleteConfirmModal({
               ออกจากทำเนียบรุ่นหรือไม่?
             </DialogDescription>
             <p className="text-xs text-[var(--muted)] mt-2 opacity-80">
-              *ข้อมูลจะถูกลบออกจากเครื่องนี้ หากต้องการนำกลับมา สามารถกดรีเซ็ตเป็นข้อมูลเริ่มต้นได้ทุกเมื่อ
+              *ข้อมูลจะถูกลบออกจากฐานข้อมูลเซิร์ฟเวอร์ หากต้องการนำกลับมา สามารถกดรีเซ็ตเป็นข้อมูลเริ่มต้นได้ทุกเมื่อ
             </p>
           </div>
         </div>
@@ -46,6 +58,7 @@ export function DeleteConfirmModal({
         <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-[var(--line)]">
           <button
             type="button"
+            disabled={isDeleting}
             onClick={() => onOpenChange(false)}
             className="px-4 py-2 rounded-lg border border-[var(--line)] hover:bg-[var(--panel)] text-sm transition-colors"
           >
@@ -53,13 +66,11 @@ export function DeleteConfirmModal({
           </button>
           <button
             type="button"
-            onClick={() => {
-              onConfirm(member.id);
-              onOpenChange(false);
-            }}
-            className="px-5 py-2 rounded-lg bg-red-500/90 hover:bg-red-600 text-white text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md"
+            disabled={isDeleting}
+            onClick={handleDelete}
+            className="px-5 py-2 rounded-lg bg-red-500/90 hover:bg-red-600 text-white text-sm font-semibold flex items-center gap-1.5 transition-colors shadow-md disabled:opacity-50"
           >
-            <Trash2 size={15} /> ลบโปรไฟล์
+            <Trash2 size={15} /> {isDeleting ? 'กำลังลบ...' : 'ลบโปรไฟล์'}
           </button>
         </div>
       </DialogContent>

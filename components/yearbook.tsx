@@ -56,6 +56,15 @@ function Counter({ to }: { to: number }) {
 export default function Yearbook() {
  const [theme,setTheme]=useState('dark'),[menu,setMenu]=useState(false),[scrolled,setScrolled]=useState(false),[query,setQuery]=useState(''),[filter,setFilter]=useState('All'),[showIds,setShowIds]=useState(false),[terminal,setTerminal]=useState(false),[loading,setLoading]=useState(true),[random,setRandom]=useState<Member|null>(null),[shuffling,setShuffling]=useState(false);
  const [memberList, setMemberList] = useState<Member[]>(members);
+  const allCategories = useMemo(() => {
+    const set = new Set<string>(categories);
+    memberList.forEach((m) => {
+      if (m.category && m.category.trim()) {
+        set.add(m.category.trim());
+      }
+    });
+    return Array.from(set);
+  }, [memberList]);
  const [memberModalOpen, setMemberModalOpen] = useState(false);
  const [memberModalMode, setMemberModalMode] = useState<'add' | 'edit'>('add');
  const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -96,15 +105,6 @@ export default function Yearbook() {
   const context=(document as Document & {modelContext?:{registerTool:(tool:unknown,options:{signal:AbortSignal})=>unknown}}).modelContext;
   if(!context?.registerTool)return;
   const lifecycle=new AbortController();
- const allCategories = useMemo(() => {
-  const set = new Set(categories);
-  memberList.forEach((m) => {
-   if (m.category && m.category.trim()) {
-    set.add(m.category.trim());
-   }
-  });
-  return Array.from(set);
- }, [memberList]);
   try { Promise.resolve(context.registerTool({name:'filter_cs66_members',title:'ค้นหาและกรองเพื่อน CS66',description:'Update the visible class directory search and role filter. Returns matching demo member summaries.',inputSchema:{type:'object',properties:{query:{type:'string'},role:{type:'string'}},required:['query','role'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input:unknown){if(!input||typeof input!=='object')throw new Error('Expected query and role');const v=input as {query:unknown;role:unknown};if(typeof v.query!=='string'||v.query.length>200||typeof v.role!=='string'||!allCategories.includes(v.role))throw new Error('Invalid query or role');const q=v.query;const role=v.role;flushSync(()=>{setQuery(q);setFilter(role);});return {members:memberList.filter(m=>(role==='All'||m.category===role)&&`${m.nickname} ${m.fullname} ${m.studentId} ${m.role}`.toLocaleLowerCase().includes(q.trim().toLocaleLowerCase())).map(m=>({id:m.id,nickname:m.nickname,role:m.role}))};}}, {signal:lifecycle.signal})).catch(()=>{}); }catch{}
   return()=>lifecycle.abort();
  },[memberList]);

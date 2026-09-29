@@ -74,6 +74,7 @@ function MemberForm({
   const [instagram, setInstagram] = useState(isEdit && initialMember ? initialMember.social?.instagram || '' : '');
   const [tiktok, setTiktok] = useState(isEdit && initialMember ? initialMember.social?.tiktok || '' : '');
   const [errors, setErrors] = useState<{ nickname?: string; fullname?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -95,7 +96,8 @@ function MemberForm({
     reader.readAsDataURL(file);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    if (isSubmitting) return;
     e.preventDefault();
     const newErrors: { nickname?: string; fullname?: string } = {};
 
@@ -543,9 +545,10 @@ function MemberForm({
           </button>
           <button
             type="submit"
-            className="px-6 py-2 rounded-lg bg-[#93bfff] text-[#090f1b] hover:bg-[#b0d0ff] text-sm font-semibold transition-all shadow-md hover:shadow-lg"
+            disabled={isSubmitting}
+            className="px-6 py-2 rounded-lg bg-[#93bfff] text-[#090f1b] hover:bg-[#b0d0ff] text-sm font-semibold transition-all shadow-md hover:shadow-lg disabled:opacity-50"
           >
-            {mode === 'add' ? 'บันทึกเพิ่มเพื่อน' : 'บันทึกการแก้ไข'}
+            {isSubmitting ? 'กำลังบันทึกลงฐานข้อมูล...' : (mode === 'add' ? 'บันทึกเพิ่มเพื่อน' : 'บันทึกการแก้ไข')}
           </button>
         </div>
       </form>
