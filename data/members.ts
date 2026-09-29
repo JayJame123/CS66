@@ -1,5 +1,6 @@
 export type Member = { id: string; nickname: string; fullname: string; studentId: string; role: string; category: string; quote: string; skills: string[]; color: string; about: string; social: { github?: string; facebook?: string; instagram?: string; tiktok?: string }; image?: string; birthday?: string };
 // Replace these demo records with consenting classmates' details and local images.
+export const classSize = 20;
 export const members: Member[] = [
   { id: 'jame', nickname: 'Jame', fullname: 'เจมส์ · สมาชิกตัวอย่าง', studentId: 'DEMO-001', role: 'นักพัฒนาหน้าบ้าน', category: 'Frontend', quote: 'กิน • นอน • เขียนโค้ด • วนไป', skills: ['React', 'TypeScript', 'CSS'], color: '#6baaff', about: 'ชอบเปลี่ยนไอเดียให้เป็นเว็บไซต์ และเชื่อว่าประสบการณ์ที่ดีเริ่มจากรายละเอียดเล็ก ๆ', social: {} },
   { id: 'mint', nickname: 'Mint', fullname: 'มิ้นท์ · สมาชิกตัวอย่าง', studentId: 'DEMO-002', role: 'นักออกแบบ UI/UX', category: 'Designer', quote: 'พิกเซลเล็ก ๆ สร้างความเป็นไปได้ไม่รู้จบ', skills: ['Figma', 'CSS', 'HTML'], color: '#bd9aff', about: 'คนที่มองเห็นสีสันในทุกโปรเจกต์ สนใจงานออกแบบที่สวยและใช้งานได้จริง', social: {} },
