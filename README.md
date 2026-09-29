@@ -45,3 +45,4 @@ node scripts/check-export.mjs
 ```
 
 การเผยแพร่ผ่าน Sites ใช้รหัสโปรเจกต์เดิมใน `.openai/hosting.json` และคงการเข้าถึงแบบส่วนตัวไว้
+"# CS66" 
