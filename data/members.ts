@@ -1,4 +1,4 @@
-export type Member = { id: string; nickname: string; fullname: string; studentId: string; role: string; category: string; quote: string; skills: string[]; color: string; about: string; social: { github?: string; facebook?: string; instagram?: string; tiktok?: string }; image?: string; birthday?: string };
+export type Member = { id: string; nickname: string; fullname: string; studentId: string; role: string; category: string; quote: string; skills: string[]; color: string; about: string; social: { github?: string; facebook?: string; instagram?: string; tiktok?: string }; image?: string; imageFit?: 'cover' | 'contain'; birthday?: string };
 // Replace these demo records with consenting classmates' details and local images.
 export const classSize = 20;
 export const members: Member[] = [

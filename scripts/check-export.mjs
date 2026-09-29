@@ -20,10 +20,10 @@ try {
  assert.equal((await fetch(origin+'/%5c..%5cpackage.json')).status,400);
  assert.equal((await fetch(origin+'/package.json')).status,404);
  assert.equal((await fetch(origin+'/',{method:'HEAD'})).status,200);
- assert.equal(new Set(memories.map(photo=>photo.image)).size,24);
+ assert.equal(new Set(memories.map(photo=>photo.image)).size,196);
  for(const photo of memories){
   const response=await fetch(origin+photo.image);assert.equal(response.status,200,photo.image);assert.equal(response.headers.get('content-type'),'image/jpeg');
   const source=await readFile(new URL('../public'+photo.image,import.meta.url));assert.deepEqual(Buffer.from(await response.arrayBuffer()),source);
  }
- console.log('PASS: 7 pages, 24 unchanged photos, 404, HEAD, method and path checks.');
+ console.log('PASS: 7 pages, 196 photos, 404, HEAD, method and path checks.');
 } finally {child.kill();if(child.exitCode===null)await once(child,'exit');}
