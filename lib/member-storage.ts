@@ -174,6 +174,12 @@ export function generateMembersTsCode(membersList?: Member[]): string {
   const list = membersList || getMembers();
   const json = JSON.stringify(list, null, 2);
 
+  const catSet = new Set(['All', 'Frontend', 'Backend', 'Designer', 'Gamer', 'AI', 'Database']);
+  list.forEach((m) => {
+    if (m.category && m.category.trim()) catSet.add(m.category.trim());
+  });
+  const catArray = JSON.stringify(Array.from(catSet));
+
   return `export type Member = {
   id: string;
   nickname: string;
@@ -199,7 +205,7 @@ export function generateMembersTsCode(membersList?: Member[]): string {
 export const classSize = ${Math.max(list.length, 20)};
 export const members: Member[] = ${json};
 
-export const categories = ['All', 'Frontend', 'Backend', 'Designer', 'Gamer', 'AI', 'Database'];
+export const categories = ${catArray};
 export const categoryLabels: Record<string, string> = {
   All: 'ทั้งหมด',
   Frontend: 'สายหน้าบ้าน',

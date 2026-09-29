@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { X, Upload, Trash2, Sparkles, Link as LinkIcon } from 'lucide-react';
+import { useState, useRef, useMemo } from 'react';
+import { X, Upload, Trash2, Sparkles, Link as LinkIcon, Plus } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { type Member, categories } from '@/data/members';
-import { addMember, updateMember } from '@/lib/member-storage';
+import { addMember, updateMember, getMembers } from '@/lib/member-storage';
 
 interface MemberModalProps {
   open: boolean;
@@ -42,7 +42,26 @@ function MemberForm({
   const [fullname, setFullname] = useState(isEdit && initialMember ? initialMember.fullname || '' : '');
   const [studentId, setStudentId] = useState(isEdit && initialMember ? initialMember.studentId || '' : '');
   const [role, setRole] = useState(isEdit && initialMember ? initialMember.role || '' : 'นักพัฒนาหน้าบ้าน');
-  const [category, setCategory] = useState(isEdit && initialMember ? initialMember.category || 'Frontend' : 'Frontend');
+  const standardCategories = useMemo(() => categories.filter((c) => c !== 'All'), []);
+  const availableCategories = useMemo(() => {
+    const set = new Set(standardCategories);
+    try {
+      const allMembers = getMembers();
+      allMembers.forEach((m) => {
+        if (m.category && m.category.trim() && m.category !== 'All') {
+          set.add(m.category.trim());
+        }
+      });
+    } catch {}
+    return Array.from(set);
+  }, [standardCategories]);
+
+  const initialCat = isEdit && initialMember?.category ? initialMember.category : 'Frontend';
+  const isInitialCustom = Boolean(isEdit && initialMember?.category && !standardCategories.includes(initialMember.category));
+
+  const [category, setCategory] = useState(initialCat);
+  const [isCustomCategory, setIsCustomCategory] = useState(isInitialCustom);
+  const [customCategoryInput, setCustomCategoryInput] = useState(isInitialCustom ? initialCat : '');
   const [quote, setQuote] = useState(isEdit && initialMember ? initialMember.quote || '' : '');
   const [about, setAbout] = useState(isEdit && initialMember ? initialMember.about || '' : '');
   const [skills, setSkills] = useState(isEdit && initialMember ? initialMember.skills?.join(', ') || '' : 'HTML, CSS, JavaScript');
@@ -97,13 +116,17 @@ function MemberForm({
       .map((s) => s.trim())
       .filter(Boolean);
 
+    const finalCategory = isCustomCategory
+      ? (customCategoryInput.trim() || 'ทั่วไป')
+      : (category || 'Frontend');
+
     const memberData: Member = {
       id: isEdit && initialMember ? initialMember.id : '',
       nickname: nickname.trim(),
       fullname: fullname.trim(),
       studentId: studentId.trim() || 'CS66',
       role: role.trim() || 'สมาชิก CS66',
-      category: category || 'Frontend',
+      category: finalCategory,
       quote: quote.trim() || 'เพื่อมิตรภาพ CS66 ตลอดไป',
       skills: parsedSkills.length ? parsedSkills : ['Coding'],
       color: color || '#6baaff',
@@ -333,18 +356,69 @@ function MemberForm({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold mb-1">หมวดหมู่สายงาน</label>
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
-            >
-              {categories.filter((c) => c !== 'All').map((cat) => (
-                <option key={cat} value={cat} className="bg-[var(--bg)] text-[var(--text)]">
-                  {cat}
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-semibold">หมวดหมู่สายงาน</label>
+              {!isCustomCategory && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomCategory(true);
+                    setCustomCategoryInput('');
+                  }}
+                  className="text-[11px] text-[var(--blue)] hover:underline flex items-center gap-0.5"
+                >
+                  <Plus size={12} /> เพิ่มใหม่
+                </button>
+              )}
+            </div>
+
+            {!isCustomCategory ? (
+              <select
+                value={category}
+                onChange={(e) => {
+                  if (e.target.value === '__custom__') {
+                    setIsCustomCategory(true);
+                    setCustomCategoryInput('');
+                  } else {
+                    setCategory(e.target.value);
+                  }
+                }}
+                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              >
+                {availableCategories.map((cat) => (
+                  <option key={cat} value={cat} className="bg-[var(--bg)] text-[var(--text)]">
+                    {cat}
+                  </option>
+                ))}
+                <option value="__custom__" className="bg-[var(--bg)] text-[var(--blue)] font-medium">
+                  + เพิ่มหมวดหมู่ใหม่ (กำหนดเอง)...
                 </option>
-              ))}
-            </select>
+              </select>
+            ) : (
+              <div className="space-y-1.5">
+                <input
+                  type="text"
+                  value={customCategoryInput}
+                  onChange={(e) => setCustomCategoryInput(e.target.value)}
+                  placeholder="เช่น Mobile App, DevOps, ตากล้อง"
+                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--blue)] focus:outline-none transition-colors"
+                  autoFocus
+                />
+                <div className="flex justify-between items-center text-[11px] text-[var(--muted)]">
+                  <span>พิมพ์หมวดหมู่ที่ต้องการ</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomCategory(false);
+                      setCategory(availableCategories[0] || 'Frontend');
+                    }}
+                    className="text-[var(--blue)] hover:underline"
+                  >
+                    ← เลือกจากรายการเดิม
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

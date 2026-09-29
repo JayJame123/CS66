@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import MemoriesGallery from '@/components/memories-gallery';
 import { memories } from '@/data/memories';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { motion, useReducedMotion } from 'framer-motion';
 import { ArrowUpRight, ArrowRight, ArrowUp, Search, Sun, Moon, Menu, X, Shuffle, Code2, Terminal, Heart, Users, UserPlus, Pencil, Trash2, Database } from 'lucide-react';
 import { flushSync } from 'react-dom';
@@ -96,7 +96,16 @@ export default function Yearbook() {
   const context=(document as Document & {modelContext?:{registerTool:(tool:unknown,options:{signal:AbortSignal})=>unknown}}).modelContext;
   if(!context?.registerTool)return;
   const lifecycle=new AbortController();
-  try { Promise.resolve(context.registerTool({name:'filter_cs66_members',title:'ค้นหาและกรองเพื่อน CS66',description:'Update the visible class directory search and role filter. Returns matching demo member summaries.',inputSchema:{type:'object',properties:{query:{type:'string'},role:{type:'string',enum:categories}},required:['query','role'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input:unknown){if(!input||typeof input!=='object')throw new Error('Expected query and role');const v=input as {query:unknown;role:unknown};if(typeof v.query!=='string'||v.query.length>200||typeof v.role!=='string'||!categories.includes(v.role))throw new Error('Invalid query or role');const q=v.query;const role=v.role;flushSync(()=>{setQuery(q);setFilter(role);});return {members:memberList.filter(m=>(role==='All'||m.category===role)&&`${m.nickname} ${m.fullname} ${m.studentId} ${m.role}`.toLocaleLowerCase().includes(q.trim().toLocaleLowerCase())).map(m=>({id:m.id,nickname:m.nickname,role:m.role}))};}}, {signal:lifecycle.signal})).catch(()=>{}); }catch{}
+ const allCategories = useMemo(() => {
+  const set = new Set(categories);
+  memberList.forEach((m) => {
+   if (m.category && m.category.trim()) {
+    set.add(m.category.trim());
+   }
+  });
+  return Array.from(set);
+ }, [memberList]);
+  try { Promise.resolve(context.registerTool({name:'filter_cs66_members',title:'ค้นหาและกรองเพื่อน CS66',description:'Update the visible class directory search and role filter. Returns matching demo member summaries.',inputSchema:{type:'object',properties:{query:{type:'string'},role:{type:'string'}},required:['query','role'],additionalProperties:false},annotations:{readOnlyHint:false,untrustedContentHint:false},execute(input:unknown){if(!input||typeof input!=='object')throw new Error('Expected query and role');const v=input as {query:unknown;role:unknown};if(typeof v.query!=='string'||v.query.length>200||typeof v.role!=='string'||!allCategories.includes(v.role))throw new Error('Invalid query or role');const q=v.query;const role=v.role;flushSync(()=>{setQuery(q);setFilter(role);});return {members:memberList.filter(m=>(role==='All'||m.category===role)&&`${m.nickname} ${m.fullname} ${m.studentId} ${m.role}`.toLocaleLowerCase().includes(q.trim().toLocaleLowerCase())).map(m=>({id:m.id,nickname:m.nickname,role:m.role}))};}}, {signal:lifecycle.signal})).catch(()=>{}); }catch{}
   return()=>lifecycle.abort();
  },[memberList]);
  const visible=memberList.filter(m=>(filter==='All'||m.category===filter)&&`${m.nickname} ${m.fullname} ${m.studentId} ${m.role}`.toLocaleLowerCase().includes(query.trim().toLocaleLowerCase()));
@@ -118,7 +127,7 @@ export default function Yearbook() {
  <section id="about" className="section container"><Reveal><div className="section-kicker">01 — เรื่องราวของเรา</div><div className="about-layout"><h2 className="section-title">จากคนละเส้นทาง<br/>มาพบกันที่ <span>CS66.</span></h2><div className="about-copy"><h3>เริ่มจาก “Hello World”<br/>กลายเป็นโลกใบเดียวกัน</h3><p>CS66 คือกลุ่มนักศึกษาสาขาวิชาวิทยาการคอมพิวเตอร์ มหาวิทยาลัยราชภัฏสกลนคร ที่เริ่มต้นเส้นทางการศึกษาในปีการศึกษา 2566</p><p>เรามาจากต่างสถานที่ ต่างความคิด และต่างความฝัน แต่ได้มาเรียนรู้ เขียนโปรแกรม ทำโปรเจกต์ แก้ Bug และสร้างความทรงจำร่วมกัน</p></div></div><div className="stats"><div><strong><Counter to={memberList.length || classSize}/><span> คน</span></strong><small>สมาชิก CS66 ที่บันทึกไว้</small></div><div><strong>—</strong><small>โปรเจกต์ · รอเพิ่มข้อมูลจริง</small></div><div><strong><Counter to={4}/><span> ปี</span></strong><small>บนเส้นทางเดียวกัน · 2566–2570</small></div><div><strong>∞</strong><small>ความทรงจำที่อยากเก็บไว้</small></div></div></Reveal></section>
  <section id="members" className="section members-section"><div className="container"><Reveal><div className="section-heading"><div><div className="section-kicker">02 — เพื่อนร่วมรุ่น</div><h2 className="section-title">รู้จักเพื่อน <span>CS66.</span></h2><p className="muted">เบื้องหลังทุกความทรงจำ คือเพื่อนเหล่านี้ · เพื่อนสามารถกดแก้ไขหรือเพิ่มโปรไฟล์ตัวเองได้</p></div><div className="section-note"><Users size={16}/>สมาชิกในระบบ {memberList.length} คน</div></div>
  <div className="directory-controls">
-  <div className="filters" aria-label="กรองตามความสนใจ">{categories.map(c=><button key={c} className={filter===c?'active':''} aria-pressed={filter===c} onClick={()=>setFilter(c)}>{categoryLabels[c]}</button>)}</div>
+  <div className="filters" aria-label="กรองตามความสนใจ">{allCategories.map(c=><button key={c} className={filter===c?'active':''} aria-pressed={filter===c} onClick={()=>setFilter(c)}>{categoryLabels[c] || c}</button>)}</div>
   <div className="action-toolbar">
    <label className="search"><Search size={17}/><input aria-label="ค้นหาเพื่อนในรุ่น" value={query} onChange={e=>setQuery(e.target.value)} placeholder="ค้นหาชื่อ หรือชื่อเล่น..." />{query&&<button aria-label="ล้างคำค้น" onClick={()=>setQuery('')}><X size={15}/></button>}</label>
    <button type="button" className="add-member-button" onClick={()=>{setMemberModalMode('add');setEditingMember(null);setMemberModalOpen(true);}}><UserPlus size={15}/> เพิ่มเพื่อนใหม่</button>
