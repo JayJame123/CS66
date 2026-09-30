@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useMemo } from 'react';
-import { X, Upload, Trash2, Sparkles, Link as LinkIcon, Plus } from 'lucide-react';
+import { X, Upload, Trash2, Sparkles, Link as LinkIcon, Plus, ChevronDown, Palette, Check, ArrowLeft } from 'lucide-react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { type Member, categories } from '@/data/members';
 import { addMember, updateMember, getMembers } from '@/lib/member-storage';
@@ -277,7 +277,7 @@ function MemberForm({
                     if (errors.nickname) setErrors((prev) => ({ ...prev, nickname: undefined }));
                   }}
                   placeholder="เช่น เจมส์, มิ้นท์, กอล์ฟ"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
                 />
                 {errors.nickname && (
                   <span className="text-[11px] text-red-400 mt-1 block">{errors.nickname}</span>
@@ -297,7 +297,7 @@ function MemberForm({
                     if (errors.fullname) setErrors((prev) => ({ ...prev, fullname: undefined }));
                   }}
                   placeholder="เช่น ณัฐวุฒิ สมบูรณ์"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
                 />
                 {errors.fullname && (
                   <span className="text-[11px] text-red-400 mt-1 block">{errors.fullname}</span>
@@ -313,7 +313,7 @@ function MemberForm({
                   value={studentId}
                   onChange={(e) => setStudentId(e.target.value)}
                   placeholder="เช่น 66314050101-1"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] font-mono transition-colors"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] font-mono transition-colors"
                 />
               </div>
 
@@ -324,7 +324,7 @@ function MemberForm({
                   value={birthday}
                   onChange={(e) => setBirthday(e.target.value)}
                   placeholder="เช่น 15 มกราคม 2548"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
                 />
               </div>
             </div>
@@ -344,22 +344,26 @@ function MemberForm({
           </div>
         </div>
 
-        {/* Role, Category & Color */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-[var(--line)]">
+        {/* Role & Category */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-[var(--line)]">
           <div>
-            <label className="block text-xs font-semibold mb-1">บทบาท / ฉายา</label>
+            <div className="flex items-center justify-between h-6 mb-1.5">
+              <label className="text-xs font-semibold">บทบาท / ฉายา</label>
+            </div>
             <input
               type="text"
               value={role}
               onChange={(e) => setRole(e.target.value)}
               placeholder="เช่น นักพัฒนาหน้าบ้าน, เกมเมอร์"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
             />
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1">
-              <label className="block text-xs font-semibold">หมวดหมู่สายงาน</label>
+            <div className="flex items-center justify-between h-6 mb-1.5">
+              <label className="text-xs font-semibold text-[var(--text)] whitespace-nowrap">
+                หมวดหมู่สายงาน
+              </label>
               {!isCustomCategory && (
                 <button
                   type="button"
@@ -367,35 +371,42 @@ function MemberForm({
                     setIsCustomCategory(true);
                     setCustomCategoryInput('');
                   }}
-                  className="text-[11px] text-[var(--blue)] hover:underline flex items-center gap-0.5"
+                  className="text-xs text-[var(--blue)] hover:text-white hover:bg-[var(--blue)]/20 px-2 py-0.5 rounded-full border border-[var(--blue)]/30 transition-all flex items-center gap-1 font-medium whitespace-nowrap shrink-0"
+                  style={{ fontSize: '11px', lineHeight: '14px' }}
                 >
-                  <Plus size={12} /> เพิ่มใหม่
+                  <Plus size={11} /> เพิ่มใหม่
                 </button>
               )}
             </div>
 
             {!isCustomCategory ? (
-              <select
-                value={category}
-                onChange={(e) => {
-                  if (e.target.value === '__custom__') {
-                    setIsCustomCategory(true);
-                    setCustomCategoryInput('');
-                  } else {
-                    setCategory(e.target.value);
-                  }
-                }}
-                className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
-              >
-                {availableCategories.map((cat) => (
-                  <option key={cat} value={cat} className="bg-[var(--bg)] text-[var(--text)]">
-                    {cat}
+              <div className="relative">
+                <select
+                  value={category}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomCategory(true);
+                      setCustomCategoryInput('');
+                    } else {
+                      setCategory(e.target.value);
+                    }
+                  }}
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors pr-9 appearance-none cursor-pointer"
+                >
+                  {availableCategories.map((cat) => (
+                    <option key={cat} value={cat} className="bg-[var(--bg)] text-[var(--text)]">
+                      {cat}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-[var(--bg)] text-[var(--blue)] font-medium">
+                    + เพิ่มหมวดหมู่ใหม่ (กำหนดเอง)...
                   </option>
-                ))}
-                <option value="__custom__" className="bg-[var(--bg)] text-[var(--blue)] font-medium">
-                  + เพิ่มหมวดหมู่ใหม่ (กำหนดเอง)...
-                </option>
-              </select>
+                </select>
+                <ChevronDown
+                  size={15}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]"
+                />
+              </div>
             ) : (
               <div className="space-y-1.5">
                 <input
@@ -403,7 +414,7 @@ function MemberForm({
                   value={customCategoryInput}
                   onChange={(e) => setCustomCategoryInput(e.target.value)}
                   placeholder="เช่น Mobile App, DevOps, ตากล้อง"
-                  className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--blue)] focus:outline-none transition-colors"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--blue)] focus:outline-none transition-colors"
                   autoFocus
                 />
                 <div className="flex justify-between items-center text-[11px] text-[var(--muted)]">
@@ -414,36 +425,68 @@ function MemberForm({
                       setIsCustomCategory(false);
                       setCategory(availableCategories[0] || 'Frontend');
                     }}
-                    className="text-[var(--blue)] hover:underline"
+                    className="text-[var(--blue)] hover:underline flex items-center gap-1 font-medium"
                   >
-                    ← เลือกจากรายการเดิม
+                    <ArrowLeft size={11} /> เลือกจากรายการเดิม
                   </button>
                 </div>
               </div>
             )}
           </div>
+        </div>
 
-          <div>
-            <label className="block text-xs font-semibold mb-1">สีประจำตัว</label>
-            <div className="flex items-center gap-2">
+        {/* Personal Color */}
+        <div className="pt-2 border-t border-[var(--line)]">
+          <div className="flex items-center justify-between mb-1.5">
+            <label className="text-xs font-semibold flex items-center gap-1.5">
+              <Palette size={13} className="text-[var(--blue)]" />
+              สีประจำตัว
+            </label>
+            <span className="text-[11px] font-mono text-[var(--muted)] px-1.5 py-0.5 rounded bg-[var(--panel)] border border-[var(--line)]">
+              {color}
+            </span>
+          </div>
+
+          <div className="flex items-center gap-3 p-2 rounded-lg bg-[var(--panel)]/50 border border-[var(--line)] flex-wrap sm:flex-nowrap">
+            {/* Native color picker */}
+            <label className="relative flex items-center justify-center cursor-pointer group shrink-0" title="คลิกเพื่อเลือกสีอิสระ">
               <input
                 type="color"
                 value={color}
                 onChange={(e) => setColor(e.target.value)}
-                className="w-9 h-9 p-0.5 rounded cursor-pointer border border-[var(--line)] bg-[var(--panel)]"
+                className="opacity-0 absolute inset-0 w-full h-full cursor-pointer"
               />
-              <div className="flex gap-1 flex-wrap">
-                {COLOR_PRESETS.map((preset) => (
+              <div
+                className="w-7 h-7 rounded-lg border-2 border-white/20 shadow-inner flex items-center justify-center transition-transform group-hover:scale-105"
+                style={{ backgroundColor: color }}
+              >
+                <div className="w-2 h-2 rounded-full bg-white/40" />
+              </div>
+            </label>
+
+            <div className="h-5 w-px bg-[var(--line)] shrink-0 hidden sm:block" />
+
+            {/* Presets */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {COLOR_PRESETS.map((preset) => {
+                const isSelected = color.toLowerCase() === preset.value.toLowerCase();
+                return (
                   <button
                     key={preset.value}
                     type="button"
                     title={preset.label}
                     onClick={() => setColor(preset.value)}
-                    className="w-5 h-5 rounded-full border border-black/20 hover:scale-110 transition-transform"
+                    className={`w-6 h-6 rounded-full transition-all relative flex items-center justify-center ${
+                      isSelected
+                        ? 'ring-2 ring-[var(--blue)] ring-offset-2 ring-offset-[var(--bg)] scale-110 shadow-sm'
+                        : 'hover:scale-110 opacity-80 hover:opacity-100'
+                    }`}
                     style={{ backgroundColor: preset.value }}
-                  />
-                ))}
-              </div>
+                  >
+                    {isSelected && <Check size={11} className="text-black drop-shadow" strokeWidth={3} />}
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -457,7 +500,7 @@ function MemberForm({
               value={quote}
               onChange={(e) => setQuote(e.target.value)}
               placeholder="เช่น กิน • นอน • เขียนโค้ด • วนไป"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
             />
           </div>
 
@@ -468,7 +511,7 @@ function MemberForm({
               value={about}
               onChange={(e) => setAbout(e.target.value)}
               placeholder="แนะนำตัวเอง ความสนใจ สิ่งที่ชอบทำตอนเรียน หรือเรื่องประทับใจ..."
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors resize-none"
+              className="w-full p-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors resize-none"
             />
           </div>
 
@@ -479,7 +522,7 @@ function MemberForm({
               value={skills}
               onChange={(e) => setSkills(e.target.value)}
               placeholder="เช่น React, TypeScript, Python, Figma, SQL"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
             />
           </div>
         </div>

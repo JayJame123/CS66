@@ -19,6 +19,17 @@ export default function MemoriesGallery() {
   return ()=>unsubscribe();
  },[]);
 
+ const availableAlbums = useMemo(() => {
+  const map = new Map<string, string>();
+  albums.forEach((a) => map.set(a.id, a.label));
+  allMemories.forEach((m) => {
+   if (m.album && m.albumLabel && m.album !== 'all') {
+    map.set(m.album, m.albumLabel);
+   }
+  });
+  return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+ }, [allMemories]);
+
  const filtered=useMemo(()=>allMemories.filter(photo=>album==='all'||photo.album===album),[allMemories,album]);
  const activeIndex=filtered.findIndex(photo=>photo.id===activeId);
  const active=filtered[activeIndex];
@@ -40,18 +51,18 @@ export default function MemoriesGallery() {
  return <section id="memories" className="section container real-memories">
   <div className="section-heading">
    <div>
-    <div className="section-kicker">03 — ช่วงเวลาดี ๆ ของพวกเรา</div>
+    <div className="section-kicker">04 — ช่วงเวลาดี ๆ ของพวกเรา</div>
     <h2 className="section-title">วันธรรมดา<span>ที่คิดถึง</span></h2>
     <p className="muted">จากวันแรกที่รู้จักกัน ถึงทุกทริปและทุกเสียงหัวเราะ</p>
    </div>
    <div className="flex items-center gap-3">
-    <span className="section-note"><Camera size={17}/>{allMemories.length} ภาพ · 4 อัลบั้มความทรงจำ</span>
+    <span className="section-note"><Camera size={17}/>{allMemories.length} ภาพ · {availableAlbums.length - 1} อัลบั้มความทรงจำ</span>
    </div>
   </div>
 
   <div className="album-toolbar">
    <div className="filters album-filters" aria-label="เลือกอัลบั้มภาพ">
-    {albums.map(item=><button key={item.id} aria-pressed={album===item.id} className={album===item.id?'active':''} onClick={()=>{setAlbum(item.id);setLimit(18);}}>{item.label}<span>{item.id==='all'?allMemories.length:allMemories.filter(photo=>photo.album===item.id).length}</span></button>)}
+    {availableAlbums.map(item=><button key={item.id} aria-pressed={album===item.id} className={album===item.id?'active':''} onClick={()=>{setAlbum(item.id);setLimit(18);}}>{item.label}<span>{item.id==='all'?allMemories.length:allMemories.filter(photo=>photo.album===item.id).length}</span></button>)}
    </div>
    <div className="action-toolbar">
     <p className="muted album-count" aria-live="polite">{filtered.length} ภาพที่บันทึกไว้</p>

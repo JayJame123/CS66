@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { X, Upload, Trash2, Camera, Sparkles } from 'lucide-react';
+import { X, Upload, Trash2, Camera, Sparkles, Plus, ChevronDown, ArrowLeft } from 'lucide-react';
 import { albums } from '@/data/memories';
-import { addCustomMemory, type MemoryItem } from '@/lib/memory-storage';
+import { addCustomMemory, getAllMemories, type MemoryItem } from '@/lib/memory-storage';
 
 interface UploadMemoryModalProps {
   open: boolean;
@@ -23,10 +23,26 @@ export function UploadMemoryModal({
   const [title, setTitle] = useState('');
   const [caption, setCaption] = useState('');
   const [selectedAlbum, setSelectedAlbum] = useState(defaultAlbum === 'all' ? 'first-year' : defaultAlbum);
+  const [isCustomAlbum, setIsCustomAlbum] = useState(false);
+  const [customAlbumInput, setCustomAlbumInput] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const availableAlbums = useMemo(() => {
+    const map = new Map<string, string>();
+    albums.filter((a) => a.id !== 'all').forEach((a) => map.set(a.id, a.label));
+    try {
+      const all = getAllMemories();
+      all.forEach((m) => {
+        if (m.album && m.albumLabel && m.album !== 'all') {
+          map.set(m.album, m.albumLabel);
+        }
+      });
+    } catch {}
+    return Array.from(map.entries()).map(([id, label]) => ({ id, label }));
+  }, [open]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -59,24 +75,46 @@ export function UploadMemoryModal({
       return;
     }
 
-    const albumObj = albums.find((a) => a.id === selectedAlbum);
-    const albumLabel = albumObj?.label || 'ความทรงจำ CS66';
+    let albumId = selectedAlbum;
+    let albumLabel = '';
 
-    const newMemory = addCustomMemory({
-      image,
-      title: title.trim(),
-      caption: caption.trim() || 'ภาพความทรงจำดี ๆ ของเพื่อน CS66',
-      album: selectedAlbum,
-      albumLabel,
-    });
+    if (isCustomAlbum) {
+      if (!customAlbumInput.trim()) {
+        setError('กรุณาระบุชื่ออัลบั้มใหม่');
+        return;
+      }
+      albumLabel = customAlbumInput.trim();
+      albumId = `album-${Date.now()}`;
+    } else {
+      const albumObj = availableAlbums.find((a) => a.id === selectedAlbum);
+      albumLabel = albumObj?.label || 'ความทรงจำ CS66';
+    }
 
-    onSuccess?.(newMemory);
-    onOpenChange(false);
-    // Reset form
-    setImage('');
-    setTitle('');
-    setCaption('');
-    setError(null);
+    setIsSubmitting(true);
+
+    try {
+      const newMemory = addCustomMemory({
+        image,
+        title: title.trim(),
+        caption: caption.trim() || 'ภาพความทรงจำดี ๆ ของเพื่อน CS66',
+        album: albumId,
+        albumLabel,
+      });
+
+      onSuccess?.(newMemory);
+      onOpenChange(false);
+      // Reset form
+      setImage('');
+      setTitle('');
+      setCaption('');
+      setIsCustomAlbum(false);
+      setCustomAlbumInput('');
+      setError(null);
+    } catch {
+      setError('เกิดข้อผิดพลาดในการบันทึกภาพ');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -159,22 +197,78 @@ export function UploadMemoryModal({
 
           {/* Album Selector */}
           <div>
-            <label className="block text-xs font-semibold mb-1">
-              อัลบั้มที่ต้องการจัดเก็บ <span className="text-red-400">*</span>
-            </label>
-            <select
-              value={selectedAlbum}
-              onChange={(e) => setSelectedAlbum(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
-            >
-              {albums
-                .filter((a) => a.id !== 'all')
-                .map((a) => (
-                  <option key={a.id} value={a.id} className="bg-[var(--bg)] text-[var(--text)]">
-                    {a.label}
+            <div className="flex items-center justify-between h-6 mb-1.5">
+              <label className="text-xs font-semibold text-[var(--text)] whitespace-nowrap">
+                อัลบั้มที่ต้องการจัดเก็บ <span className="text-red-400">*</span>
+              </label>
+              {!isCustomAlbum && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsCustomAlbum(true);
+                    setCustomAlbumInput('');
+                  }}
+                  className="text-xs text-[var(--blue)] hover:text-white hover:bg-[var(--blue)]/20 px-2.5 py-0.5 rounded-full border border-[var(--blue)]/30 transition-all flex items-center gap-1 font-medium whitespace-nowrap shrink-0"
+                  style={{ fontSize: '11px', lineHeight: '14px' }}
+                >
+                  <Plus size={11} /> เพิ่มอัลบั้มใหม่
+                </button>
+              )}
+            </div>
+
+            {!isCustomAlbum ? (
+              <div className="relative">
+                <select
+                  value={selectedAlbum}
+                  onChange={(e) => {
+                    if (e.target.value === '__custom__') {
+                      setIsCustomAlbum(true);
+                      setCustomAlbumInput('');
+                    } else {
+                      setSelectedAlbum(e.target.value);
+                    }
+                  }}
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors pr-9 appearance-none cursor-pointer"
+                >
+                  {availableAlbums.map((a) => (
+                    <option key={a.id} value={a.id} className="bg-[var(--bg)] text-[var(--text)]">
+                      {a.label}
+                    </option>
+                  ))}
+                  <option value="__custom__" className="bg-[var(--bg)] text-[var(--blue)] font-medium">
+                    + เพิ่มอัลบั้มใหม่ (กำหนดเอง)...
                   </option>
-                ))}
-            </select>
+                </select>
+                <ChevronDown
+                  size={15}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-[var(--muted)]"
+                />
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <input
+                  type="text"
+                  value={customAlbumInput}
+                  onChange={(e) => setCustomAlbumInput(e.target.value)}
+                  placeholder="เช่น กิจกรรมรับน้องปี 1, ทริปเขาใหญ่, กีฬาสี CS"
+                  className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--blue)] focus:outline-none transition-colors"
+                  autoFocus
+                />
+                <div className="flex justify-between items-center text-[11px] text-[var(--muted)]">
+                  <span>พิมพ์ชื่ออัลบั้มที่ต้องการสร้างใหม่</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCustomAlbum(false);
+                      setSelectedAlbum(availableAlbums[0]?.id || 'first-year');
+                    }}
+                    className="text-[var(--blue)] hover:underline flex items-center gap-1 font-medium"
+                  >
+                    <ArrowLeft size={11} /> เลือกจากอัลบั้มเดิม
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Title */}
@@ -188,7 +282,7 @@ export function UploadMemoryModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="เช่น บรรยากาศวันรับน้อง, ทริปถ่ายรูปริมทะเล"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
             />
           </div>
 
@@ -200,7 +294,7 @@ export function UploadMemoryModal({
               value={caption}
               onChange={(e) => setCaption(e.target.value)}
               placeholder="เช่น ช่วงเวลาดี ๆ ที่มีเพื่อนอยู่ด้วยเสมอ"
-              className="w-full px-3 py-2 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
+              className="w-full h-10 px-3 text-sm rounded-lg bg-[var(--panel)] border border-[var(--line)] focus:outline-none focus:border-[var(--blue)] transition-colors"
             />
           </div>
 
