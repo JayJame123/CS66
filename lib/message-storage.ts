@@ -51,11 +51,11 @@ export const defaultMessages: FriendMessage[] = [
   },
   {
     id: 'msg-4',
-    senderName: 'Golf',
-    receiverId: 'jame',
-    receiverName: 'จารย์เจมส์',
-    content: 'ขอบคุณจารย์เจมส์ที่คอยแบกวิชา Web App และช่วยสอน React มาตลอด จารย์เก่งมาก!',
-    tag: '// best mentor',
+    senderName: 'Fah',
+    receiverId: 'all',
+    receiverName: 'ทุกคนใน CS66',
+    content: 'ผ่านโปรเจกต์มหาหินมาด้วยกันได้ ต่อไปนี้ในสายงาน Tech เจอปัญหาอะไรก็ไม่กลัวแล้ว สู้ไปด้วยกัน!',
+    tag: '// keep pushing forward',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 1).toISOString(),
     likes: 8,
     color: '#f6ad55',
@@ -63,6 +63,7 @@ export const defaultMessages: FriendMessage[] = [
 ];
 
 let messageCache: FriendMessage[] = defaultMessages;
+let isInitialized = false;
 
 function loadInitialMessages(): FriendMessage[] {
   if (typeof window === 'undefined') return defaultMessages;
@@ -82,6 +83,37 @@ if (typeof window !== 'undefined') {
   messageCache = loadInitialMessages();
 }
 
+export async function syncMessagesWithApi(): Promise<FriendMessage[]> {
+  if (typeof window === 'undefined') return messageCache;
+  try {
+    const res = await fetch('/api/messages', { cache: 'no-store' });
+    if (res.ok) {
+      const json = (await res.json()) as { success?: boolean; data?: FriendMessage[] };
+      if (json.success && Array.isArray(json.data) && json.data.length > 0) {
+        messageCache = json.data;
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(json.data));
+        } catch {}
+        window.dispatchEvent(new CustomEvent(UPDATE_EVENT, { detail: json.data }));
+        return json.data;
+      }
+    }
+  } catch (err) {
+    console.warn('[CS66] Messages API sync skipped/offline fallback:', err);
+  }
+  return messageCache;
+}
+
+function initSyncOnce() {
+  if (typeof window === 'undefined' || isInitialized) return;
+  isInitialized = true;
+  setTimeout(() => syncMessagesWithApi(), 100);
+  window.addEventListener('focus', () => syncMessagesWithApi());
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncMessagesWithApi();
+  });
+}
+
 function persistMessages(messages: FriendMessage[]) {
   messageCache = messages;
   if (typeof window === 'undefined') return;
@@ -94,6 +126,7 @@ function persistMessages(messages: FriendMessage[]) {
 }
 
 export function getMessages(): FriendMessage[] {
+  initSyncOnce();
   if (typeof window === 'undefined') return messageCache;
   messageCache = loadInitialMessages();
   return messageCache;
@@ -122,6 +155,23 @@ export function addMessage(data: {
 
   const updated = [newMessage, ...current];
   persistMessages(updated);
+
+  // Sync to PostgreSQL
+  if (typeof window !== 'undefined') {
+    fetch('/api/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newMessage),
+    })
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.list && Array.isArray(data.list)) {
+          persistMessages(data.list);
+        }
+      })
+      .catch((err) => console.warn('[CS66] Failed to save message on server:', err));
+  }
+
   return newMessage;
 }
 
@@ -130,6 +180,21 @@ export function deleteMessage(id: string): boolean {
   const updated = current.filter((m) => m.id !== id);
   if (updated.length === current.length) return false;
   persistMessages(updated);
+
+  // Sync delete to PostgreSQL
+  if (typeof window !== 'undefined') {
+    fetch(`/api/messages/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.list && Array.isArray(data.list)) {
+          persistMessages(data.list);
+        }
+      })
+      .catch((err) => console.warn('[CS66] Failed to delete message on server:', err));
+  }
+
   return true;
 }
 
@@ -144,6 +209,21 @@ export function likeMessage(id: string): number {
     return m;
   });
   persistMessages(updated);
+
+  // Sync like to PostgreSQL
+  if (typeof window !== 'undefined') {
+    fetch(`/api/messages/${encodeURIComponent(id)}/like`, {
+      method: 'POST',
+    })
+      .then((res) => res.json())
+      .then((data: any) => {
+        if (data?.list && Array.isArray(data.list)) {
+          persistMessages(data.list);
+        }
+      })
+      .catch((err) => console.warn('[CS66] Failed to like message on server:', err));
+  }
+
   return newLikes;
 }
 
@@ -160,6 +240,10 @@ export function resetMessages(): void {
 }
 
 export function subscribeMessages(callback: (messages: FriendMessage[]) => void): () => void {
+  return subscribeToMessages(callback);
+}
+
+export function subscribeToMessages(callback: (messages: FriendMessage[]) => void): () => void {
   if (typeof window === 'undefined') return () => {};
   const handler = (e: Event) => {
     const custom = e as CustomEvent<FriendMessage[]>;

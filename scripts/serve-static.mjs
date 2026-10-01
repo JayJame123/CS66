@@ -12,6 +12,13 @@ import {
   getAllMemories,
   saveMemory,
   deleteMemory,
+  getAllTeachers,
+  saveTeacher,
+  deleteTeacher,
+  getAllMessages,
+  saveMessage,
+  deleteMessage,
+  toggleLikeMessage,
 } from '../server/db.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -105,7 +112,7 @@ const server = createServer(async (req, res) => {
   }
 
   // -------------------------------------------------------------
-  // API Endpoints (SQLite Database)
+  // API Endpoints (PostgreSQL Database)
   // -------------------------------------------------------------
   if (pathname.startsWith('/api/')) {
     try {
@@ -115,25 +122,25 @@ const server = createServer(async (req, res) => {
 
         if (req.method === 'GET') {
           if (idFromPath) {
-            const member = getMemberById(idFromPath);
+            const member = await getMemberById(idFromPath);
             if (!member) return sendJson(res, 404, { success: false, error: 'Member not found' });
             return sendJson(res, 200, { success: true, data: member });
           }
-          const members = getAllMembers();
+          const members = await getAllMembers();
           return sendJson(res, 200, { success: true, data: members });
         }
 
         if (req.method === 'POST') {
           if (idFromPath === 'reset') {
-            const list = resetMembers();
+            const list = await resetMembers();
             return sendJson(res, 200, { success: true, data: list, message: 'Reset successfully' });
           }
           const body = await readBody(req);
           if (!body || !body.nickname) {
             return sendJson(res, 400, { success: false, error: 'Nickname is required' });
           }
-          const saved = saveMember(body);
-          const all = getAllMembers();
+          const saved = await saveMember(body);
+          const all = await getAllMembers();
           return sendJson(res, 200, { success: true, data: saved, list: all });
         }
 
@@ -141,8 +148,8 @@ const server = createServer(async (req, res) => {
           const body = req.headers['content-length'] ? await readBody(req).catch(() => ({})) : {};
           const id = idFromPath || body.id || urlObj.searchParams.get('id');
           if (!id) return sendJson(res, 400, { success: false, error: 'Member ID required' });
-          const deleted = deleteMember(id);
-          const all = getAllMembers();
+          const deleted = await deleteMember(id);
+          const all = await getAllMembers();
           return sendJson(res, 200, { success: deleted, list: all });
         }
 
@@ -154,7 +161,7 @@ const server = createServer(async (req, res) => {
         const idFromPath = pathname.replace(/^\/api\/memories\/?/, '').trim();
 
         if (req.method === 'GET') {
-          const memories = getAllMemories();
+          const memories = await getAllMemories();
           return sendJson(res, 200, { success: true, data: memories });
         }
 
@@ -163,8 +170,8 @@ const server = createServer(async (req, res) => {
           if (!body || !body.image) {
             return sendJson(res, 400, { success: false, error: 'Image is required' });
           }
-          const saved = saveMemory(body);
-          const all = getAllMemories();
+          const saved = await saveMemory(body);
+          const all = await getAllMemories();
           return sendJson(res, 200, { success: true, data: saved, list: all });
         }
 
@@ -172,8 +179,77 @@ const server = createServer(async (req, res) => {
           const body = req.headers['content-length'] ? await readBody(req).catch(() => ({})) : {};
           const id = idFromPath || body.id || urlObj.searchParams.get('id');
           if (!id) return sendJson(res, 400, { success: false, error: 'Memory ID required' });
-          const deleted = deleteMemory(id);
-          const all = getAllMemories();
+          const deleted = await deleteMemory(id);
+          const all = await getAllMemories();
+          return sendJson(res, 200, { success: deleted, list: all });
+        }
+
+        return sendJson(res, 405, { error: 'Method Not Allowed' });
+      }
+
+      // 3. Teachers API
+      if (pathname === '/api/teachers' || pathname.startsWith('/api/teachers/')) {
+        const idFromPath = pathname.replace(/^\/api\/teachers\/?/, '').trim();
+
+        if (req.method === 'GET') {
+          const teachers = await getAllTeachers();
+          return sendJson(res, 200, { success: true, data: teachers });
+        }
+
+        if (req.method === 'POST') {
+          const body = await readBody(req);
+          if (!body || !body.fullname) {
+            return sendJson(res, 400, { success: false, error: 'Fullname is required' });
+          }
+          const saved = await saveTeacher(body);
+          const all = await getAllTeachers();
+          return sendJson(res, 200, { success: true, data: saved, list: all });
+        }
+
+        if (req.method === 'DELETE') {
+          const body = req.headers['content-length'] ? await readBody(req).catch(() => ({})) : {};
+          const id = idFromPath || body.id || urlObj.searchParams.get('id');
+          if (!id) return sendJson(res, 400, { success: false, error: 'Teacher ID required' });
+          const deleted = await deleteTeacher(id);
+          const all = await getAllTeachers();
+          return sendJson(res, 200, { success: deleted, list: all });
+        }
+
+        return sendJson(res, 405, { error: 'Method Not Allowed' });
+      }
+
+      // 4. Messages API
+      if (pathname === '/api/messages' || pathname.startsWith('/api/messages/')) {
+        const idFromPath = pathname.replace(/^\/api\/messages\/?/, '').trim();
+
+        if (req.method === 'GET') {
+          const messages = await getAllMessages();
+          return sendJson(res, 200, { success: true, data: messages });
+        }
+
+        if (req.method === 'POST') {
+          if (idFromPath.endsWith('/like') || pathname.endsWith('/like')) {
+            const likeId = idFromPath.replace(/\/like$/, '');
+            const liked = await toggleLikeMessage(likeId);
+            const all = await getAllMessages();
+            return sendJson(res, 200, { success: Boolean(liked), data: liked, list: all });
+          }
+
+          const body = await readBody(req);
+          if (!body || !body.content || !body.senderName) {
+            return sendJson(res, 400, { success: false, error: 'Sender name and content are required' });
+          }
+          const saved = await saveMessage(body);
+          const all = await getAllMessages();
+          return sendJson(res, 200, { success: true, data: saved, list: all });
+        }
+
+        if (req.method === 'DELETE') {
+          const body = req.headers['content-length'] ? await readBody(req).catch(() => ({})) : {};
+          const id = idFromPath || body.id || urlObj.searchParams.get('id');
+          if (!id) return sendJson(res, 400, { success: false, error: 'Message ID required' });
+          const deleted = await deleteMessage(id);
+          const all = await getAllMessages();
           return sendJson(res, 200, { success: deleted, list: all });
         }
 
@@ -306,8 +382,8 @@ const host = process.env.HOST || '0.0.0.0';
 server.listen(port, host, () => {
   const actualPort = server.address()?.port || port;
   console.log(`==========================================`);
-  console.log(`🚀 CS66 Server (SQLite + Full API) Ready!`);
+  console.log(`🚀 CS66 Server (PostgreSQL + Full API) Ready!`);
   console.log(`🌐 Local URL:  http://127.0.0.1:${actualPort}`);
-  console.log(`🗄️ Database:   data/cs66.sqlite`);
+  console.log(`🗄️ Database:   PostgreSQL (CS66 @ 100.70.251.65:5432)`);
   console.log(`==========================================`);
 });
